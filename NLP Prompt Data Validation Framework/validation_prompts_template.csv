@@ -1,0 +1,7 @@
+prompt_id,validation_prompt,purpose
+1,Get duplicate id and title in production data,Find Duplicates
+2,Join stage and production data with id to compare average imdb votes by certification,Data Validation
+3,Find  total count of records for stage and production data,Data Validation
+4,Find top 3 imdb votes movies for each age certification from prod data,Data Analysis
+5,Find total null values for each column in production data and show it in unpivoted form,Data Quality
+6,Find avg imdb votes by types and compare the data between stage and production,Data Validation
