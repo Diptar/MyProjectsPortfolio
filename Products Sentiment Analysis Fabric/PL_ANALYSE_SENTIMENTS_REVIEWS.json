@@ -1,0 +1,191 @@
+{
+    "name": "PL_ANALYSE_SENTIMENT_REVIEWS",
+    "objectId": "e69d8f09-7792-4a90-a3d0-de9f0b3d5ce9",
+    "properties": {
+        "activities": [
+            {
+                "name": "Ingest Reviews Data",
+                "description": "Ingesting Reviews Data from GitHub account to Lakehouse",
+                "type": "Copy",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "source": {
+                        "type": "DelimitedTextSource",
+                        "storeSettings": {
+                            "type": "HttpReadSettings",
+                            "requestMethod": "GET"
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextReadSettings"
+                        },
+                        "datasetSettings": {
+                            "annotations": [],
+                            "type": "DelimitedText",
+                            "typeProperties": {
+                                "location": {
+                                    "type": "HttpServerLocation",
+                                    "relativeUrl": "Diptar/MyProjectsPortfolio/refs/heads/main/Source%20Data%20Files/Sales%20Data/amazon_reviews_products.csv"
+                                },
+                                "columnDelimiter": ",",
+                                "escapeChar": "\\",
+                                "firstRowAsHeader": true,
+                                "quoteChar": "\""
+                            },
+                            "schema": [],
+                            "externalReferences": {
+                                "connection": "511ed8e5-18c5-4b39-890c-e24d880fee12"
+                            }
+                        }
+                    },
+                    "sink": {
+                        "type": "DelimitedTextSink",
+                        "storeSettings": {
+                            "type": "LakehouseWriteSettings"
+                        },
+                        "formatSettings": {
+                            "type": "DelimitedTextWriteSettings",
+                            "fileExtension": ".txt"
+                        },
+                        "datasetSettings": {
+                            "annotations": [],
+                            "linkedService": {
+                                "name": "LK_AMAZON_REVIEWS_SENTIMENT",
+                                "properties": {
+                                    "annotations": [],
+                                    "type": "Lakehouse",
+                                    "typeProperties": {
+                                        "workspaceId": "a95bcc54-fa4c-4393-a920-74ff4a2c1ae5",
+                                        "artifactId": "2a655fb0-424a-4801-b080-79e15a91b774",
+                                        "rootFolder": "Files"
+                                    }
+                                }
+                            },
+                            "type": "DelimitedText",
+                            "typeProperties": {
+                                "location": {
+                                    "type": "LakehouseLocation",
+                                    "fileName": "amazon_reviews_products.csv"
+                                },
+                                "columnDelimiter": ",",
+                                "escapeChar": "\\",
+                                "firstRowAsHeader": true,
+                                "quoteChar": "\""
+                            },
+                            "schema": []
+                        }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "type": "TabularTranslator",
+                        "typeConversion": true,
+                        "typeConversionSettings": {
+                            "allowDataTruncation": true,
+                            "treatBooleanAsNumber": false
+                        }
+                    }
+                }
+            },
+            {
+                "name": "Check If File Existing",
+                "description": "Check If ingested file is present or not in Lakehouse",
+                "type": "GetMetadata",
+                "dependsOn": [
+                    {
+                        "activity": "Ingest Reviews Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "typeProperties": {
+                    "fieldList": [
+                        "exists"
+                    ],
+                    "datasetSettings": {
+                        "annotations": [],
+                        "linkedService": {
+                            "name": "LK_AMAZON_REVIEWS_SENTIMENT",
+                            "properties": {
+                                "annotations": [],
+                                "type": "Lakehouse",
+                                "typeProperties": {
+                                    "workspaceId": "a95bcc54-fa4c-4393-a920-74ff4a2c1ae5",
+                                    "artifactId": "2a655fb0-424a-4801-b080-79e15a91b774",
+                                    "rootFolder": "Files"
+                                }
+                            }
+                        },
+                        "type": "Binary",
+                        "typeProperties": {
+                            "location": {
+                                "type": "LakehouseLocation",
+                                "fileName": "amazon_reviews_products.csv"
+                            }
+                        }
+                    },
+                    "storeSettings": {
+                        "type": "LakehouseReadSettings",
+                        "recursive": true,
+                        "enablePartitionDiscovery": false
+                    },
+                    "formatSettings": {
+                        "type": "BinaryReadSettings"
+                    }
+                }
+            },
+            {
+                "name": "If File Existing",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Check If File Existing",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@equals(activity('Check If File Existing').output.exists,true)",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [],
+                    "ifTrueActivities": [
+                        {
+                            "name": "Analyse Sentiment",
+                            "type": "TridentNotebook",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "typeProperties": {
+                                "notebookId": "ac475348-dcff-43d5-aa7a-bf4ca731e3e4",
+                                "workspaceId": "a95bcc54-fa4c-4393-a920-74ff4a2c1ae5"
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "lastModifiedByObjectId": "afd95924-c86a-4525-8710-17cee083bb20",
+        "lastPublishTime": "2025-06-28T15:51:50Z"
+    }
+}
